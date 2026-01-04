@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Text Extractor with Puter AI</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #4CAF50;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        .file-label:hover {
+            background: #5a6fd8;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .preview-section {
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.processing {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-top: 10px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-item {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Text Extractor</h1>
+        <p class="subtitle">Upload any image and extract text using Puter AI</p>
+        
+        <!-- Upload Section -->
+        <div class="upload-area" id="dropZone">
+            <div class="upload-icon"></div>
+            <h3>Drag & Drop Image Here</h3>
+            <p>or</p>
+            <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
+            <label for="fileInput" class="file-label">Choose File</label>
+            <p style="color: #666; margin-top: 10px; font-size: 14px;">
+                Supported: JPG, PNG, GIF, BMP, WebP (Max: 10MB)
+            </p>
+        </div>
+        
+        <!-- Preview Section -->
+        <div class="preview-section">
+            <img id="imagePreview" alt="Image Preview">
+            <div id="noPreview">No image selected</div>
+        </div>
+        
+        <!-- Status Messages -->
+        <div id="status" class="status"></div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button onclick="extractText()" id="extractBtn">Extract Text</button>
+            <button onclick="clearAll()" style="background: #6c757d;">Clear All</button>
+            <button onclick="copyToClipboard()" id="copyBtn" style="background: #28a745; display: none;">
+                Copy Text
+            </button>
+            <button onclick="downloadText()" id="downloadBtn" style="background: #17a2b8; display: none;">
+                ⬇️ Download Text
+            </button>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="result-section" id="resultSection">
+            <h3>Extracted Text:</h3>
+            <textarea id="extractedText" placeholder="Extracted text will appear here..." readonly></textarea>
+            <div class="stats">
+                <div class="stat-item" id="charCount">Characters: 0</div>
+                <div class="stat-item" id="wordCount">Words: 0</div>
+                <div class="stat-item" id="lineCount">Lines: 0</div>
+            </div>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="info-box">
+            <strong>How it works:</strong>
+            <p>1. Upload any image containing text (screenshot, photo, document, etc.)</p>
+            <p>2. Click "Extract Text" to use Puter AI's OCR technology</p>
+            <p>3. Copy or download the extracted text</p>
+            <p><em>Note: Puter AI processes images locally in your browser for privacy.</em></p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const imagePreview = document.getElementById('imagePreview');
+        const noPreview = document.getElementById('noPreview');
+        const extractedText = document.getElementById('extractedText');
+        const extractBtn = document.getElementById('extractBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultSection = document.getElementById('resultSection');
+        const status = document.getElementById('status');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const lineCount = document.getElementById('lineCount');
+        
+        let currentImageData = null;
+        
+        // Initialize
+        function init() {
+            extractBtn.disabled = true;
+            showStatus('Ready to extract text from images', 'success');
+        }
+        
+        // Show status message
+        function showStatus(message, type = 'processing') {
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Preview uploaded image
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showStatus('Please select an image file', 'error');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('File size too large (max 10MB)', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageData = e.target.result;
+                imagePreview.src = currentImageData;
+                imagePreview.style.display = 'block';
+                noPreview.style.display = 'none';
+                extractBtn.disabled = false;
+                showStatus('Image loaded. Click "Extract Text" to process.', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Extract text from image using Puter AI
+        async function extractText() {
+            if (!currentImageData) {
+                showStatus('Please select an image first', 'error');
+                return;
+            }
+            
+            showStatus('<span class="loading"></span> Extracting text from image...', 'processing');
+            extractBtn.disabled = true;
+            extractedText.value = 'Processing...';
+            resultSection.style.display = 'block';
+            
+            try {
+                // Use Puter AI's img2txt function
+                const text = await puter.ai.img2txt({
+                    source: currentImageData,
+                    provider: 'aws-textract' // or 'google-vision' or 'ocr-space'
+                });
+                
+                if (text && text.trim()) {
+                    extractedText.value = text;
+                    updateStats(text);
+                    showStatus('Text extraction successful!', 'success');
+                    
+                    // Show copy/download buttons
+                    copyBtn.style.display = 'inline-block';
+                    downloadBtn.style.display = 'inline-block';
+                } else {
+                    extractedText.value = 'No text could be detected in the image.';
+                    showStatus('No text found in image. Try a clearer image.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Puter AI Error:', error);
+                
+                let errorMessage = 'Failed to extract text. ';
+                if (error.message.includes('provider')) {
+                    errorMessage += 'OCR service unavailable. ';
+                }
+                errorMessage += 'Error: ' + error.message;
+                
+                extractedText.value = 'Error: ' + error.message;
+                showStatus(errorMessage, 'error');
+            } finally {
+                extractBtn.disabled = false;
+            }
+        }
+        
+        // Update text statistics
+        function updateStats(text) {
+            const chars = text.length;
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+            const lines = text.split('\n').length;
+            
+            charCount.textContent = `Characters: ${chars}`;
+            wordCount.textContent = `Words: ${words}`;
+            lineCount.textContent = `Lines: ${lines}`;
+        }
+        
+        // Copy text to clipboard
+        async function copyToClipboard() {
+            try {
+                await navigator.clipboard.writeText(extractedText.value);
+                showStatus('Text copied to clipboard!', 'success');
+            } catch (error) {
+                showStatus('Failed to copy text', 'error');
+            }
+        }
+        
+        // Download text as file
+        function downloadText() {
+            const text = extractedText.value;
+            if (!text.trim()) {
+                showStatus('No text to download', 'error');
+                return;
+            }
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `extracted-text-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus('Text downloaded!', 'success');
+        }
+        
+        // Clear everything
+        function clearAll() {
+            fileInput.value = '';
+            currentImageData = null;
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+            noPreview.style.display = 'block';
+            extractedText.value = '';
+            resultSection.style.display = 'none';
+            copyBtn.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            extractBtn.disabled = true;
+            status.style.display = 'none';
+            
+            // Reset stats
+            charCount.textContent = 'Characters: 0';
+            wordCount.textContent = 'Words: 0';
+            lineCount.textContent = 'Lines: 0';
+            
+            showStatus('Cleared. Ready for new image.', 'success');
+        }
+        
+        // Drag and drop functionality
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                
+                if (!file.type.match('image.*')) {
+                    showStatus('Please drop an image file', 'error');
+                    return;
+                }
+                
+                if (file.size > 10 * 1024 * 1024) {
+                    showStatus('File size too large (max 10MB)', 'error');
+                    return;
+                }
+                
+                // Create a mock event to reuse previewImage function
+                const mockEvent = {
+                    target: {
+                        files: [file]
+                    }
+                };
+                
+                previewImage(mockEvent);
+            }
+        });
+        
+        // Click drop zone to trigger file input
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Example API function that can be called from other scripts
+        window.PuterTextExtractor = {
+            // Extract text from image data URL
+            extractFromDataURL: async function(dataURL) {
+                try {
+                    const text = await puter.ai.img2txt({
+                        source: dataURL,
+                        provider: 'aws-textract'
+                    });
+                    return { success: true, text: text || '' };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Extract text from file object
+            extractFromFile: async function(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        try {
+                            const text = await puter.ai.img2txt({
+                                source: e.target.result,
+                                provider: 'aws-textract'
+                            });
+                            resolve({ success: true, text: text || '' });
+                        } catch (error) {
+                            resolve({ success: false, error: error.message });
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            },
+            
+            // Get current extracted text
+            getText: function() {
+                return extractedText.value;
+            },
+            
+            // Clear current data
+            clear: clearAll
+        };
+    </script>
+</body>
+</html>
